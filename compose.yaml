@@ -1,5 +1,8 @@
+name: boss-ai
 services:
     laravel.test:
+        container_name: ai-app
+        restart: unless-stopped
         build:
             context: './vendor/laravel/sail/runtimes/8.5'
             dockerfile: Dockerfile
@@ -25,6 +28,8 @@ services:
             - mysql
             - ollama
     mysql:
+        container_name: ai-mysql
+        restart: unless-stopped
         image: 'mysql:8.4'
         ports:
             - '${FORWARD_DB_PORT:-3306}:3306'
@@ -34,7 +39,8 @@ services:
             MYSQL_DATABASE: '${DB_DATABASE}'
             MYSQL_USER: '${DB_USERNAME}'
             MYSQL_PASSWORD: '${DB_PASSWORD}'
-            MYSQL_ALLOW_EMPTY_PASSWORD: 1
+            MYSQL_ALLOW_EMPTY_PASSWORD: 0
+
             MYSQL_EXTRA_OPTIONS: '${MYSQL_EXTRA_OPTIONS:-}'
         volumes:
             - 'sail-mysql:/var/lib/mysql'
@@ -52,6 +58,7 @@ services:
     ollama:
         image: 'ollama/ollama:latest'
         container_name: ollama
+        restart: unless-stopped
         volumes:
             - 'sail-ollama:/root/.ollama'
         networks:
@@ -64,7 +71,7 @@ services:
                     devices:
                         - driver: nvidia
                           count: 1
-                          capabilities: [gpu]
+                          capabilities: [ gpu ]
 networks:
     sail:
         driver: bridge
