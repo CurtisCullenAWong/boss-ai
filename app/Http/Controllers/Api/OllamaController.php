@@ -44,6 +44,46 @@ class OllamaController extends Controller
     }
 
     /**
+     * Handle single generate requests.
+     */
+    public function generate(Request $request)
+    {
+        $request->validate([
+            'prompt' => 'required|string',
+        ]);
+
+        $result = $this->ollama->generate($request->input('prompt'));
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to communicate with Ollama'], 500);
+        }
+
+        return response()->json($result);
+    }
+
+    /**
+     * Trigger model training (creation with knowledge base).
+     */
+    public function train(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'base_model' => 'nullable|string',
+        ]);
+
+        $result = $this->ollama->train(
+            $request->input('name'),
+            $request->input('base_model')
+        );
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to trigger training'], 500);
+        }
+
+        return response()->json($result);
+    }
+
+    /**
      * List available models.
      */
     public function models()
@@ -55,5 +95,37 @@ class OllamaController extends Controller
         }
 
         return response()->json($result);
+    }
+
+    /**
+     * Pull a new model.
+     */
+    public function pull(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+        ]);
+
+        $result = $this->ollama->pullModel($request->input('name'));
+
+        if (!$result) {
+            return response()->json(['error' => 'Failed to pull model'], 500);
+        }
+
+        return response()->json($result);
+    }
+
+    /**
+     * Get service status.
+     */
+    public function status()
+    {
+        $models = $this->ollama->listModels();
+        
+        return response()->json([
+            'status' => $models ? 'online' : 'offline',
+            'configured_model' => config('services.ollama.model'),
+            'base_url' => config('services.ollama.url'),
+        ]);
     }
 }

@@ -1,0 +1,199 @@
+{
+	"info": {
+		"_postman_id": "c6084d61-fe7f-44c3-89cd-e73f52df1897",
+		"name": "Company Assistant API",
+		"description": "API collection for managing and interacting with the Ollama-based Company Assistant.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Status",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/ollama/status",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"ollama",
+						"status"
+					]
+				},
+				"description": "Check the status of the Ollama service and configuration."
+			},
+			"response": []
+		},
+		{
+			"name": "List Models",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/ollama/models",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"ollama",
+						"models"
+					]
+				},
+				"description": "List all available models in the local Ollama instance."
+			},
+			"response": []
+		},
+		{
+			"name": "Chat",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"prompt\": \"When was Boss Cargo Express founded?\",\n    \"messages\": [\n        {\"role\": \"user\", \"content\": \"When was Boss Cargo Express founded?\"}\n    ]\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/ollama/chat",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"ollama",
+						"chat"
+					]
+				},
+				"description": "Send a chat request to the configured model."
+			},
+			"response": []
+		},
+		{
+			"name": "Generate",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"prompt\": \"What are the core services of Boss Cargo Express?\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/ollama/generate",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"ollama",
+						"generate"
+					]
+				},
+				"description": "Generate a single response for a prompt."
+			},
+			"response": []
+		},
+		{
+			"name": "Pull Model",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"gemma3:4b\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/ollama/pull",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"ollama",
+						"pull"
+					]
+				},
+				"description": "Pull a new base model from the Ollama library."
+			},
+			"response": []
+		},
+		{
+			"name": "Train/Create Assistant",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"company-assistant\",\n    \"base_model\": \"gemma3:4b\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/ollama/train",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"ollama",
+						"train"
+					]
+				},
+				"description": "Trigger the creation of the specialized company assistant model using the Modelfile."
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost",
+			"type": "string"
+		}
+	]
+}

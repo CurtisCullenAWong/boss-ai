@@ -1,0 +1,50 @@
+# BOSS CARGO EXPRESS (BCE) - COMPRESSED KNOWLEDGE BASE
+
+## 1. COMPANY IDENTITY
+- **Full Name:** Boss Cargo Express Freight Services Inc.
+- **Short Name:** BCE
+- **Founded:** 2014 (Puerto Princesa City, Palawan)
+- **HQ Address:** Unit B, Block 3 Lot 6, Angelina Canaynay Ave, BF Martinville Subd, Brgy Manuyo Dos, Las Piñas 1744, Metro Manila.
+- **Slogan:** "Synergy beyond compare."
+- **Core Philosophy:** CANI (Constant And Never Ending Improvement).
+- **Culture:** Everyone addresses each other as "Boss".
+
+## 2. CONTACT CHANNELS
+- **General Hotline:** (02) 8805 2402
+- **Marketing:** (02) 8643 5469
+- **Customer Service:** (02) 8881 1948
+- **Finance:** (02) 8887 2369
+- **Globe:** (+63) 917 622 0068
+- **Smart/Sun:** (+63) 925 770 0370
+- **Email (General):** info@bosscargo.express
+- **Email (HR):** people@bosscargo.express
+- **Facebook:** ikawangbossko20
+- **LinkedIn:** Boss Cargo Express
+
+## 3. CORE SERVICES
+- **International:** Air Freight, Sea Freight (FCL/LCL), Brokerage (Customs, Tariff, Permits, PEZA).
+- **Domestic:** Air, Land (Trucking), Sea (FCL/LCL), RORO (Wheeled Cargo).
+- **Logistics:** Warehousing, Distribution, Packing, Crating.
+- **Specialized:** Live animal permits, frozen meat permits.
+
+## 4. SERVICE NETWORK
+- **Main Hubs:** Las Piñas (HQ), Parañaque, Taytay.
+- **North Luzon:** Abra, Aparri, Baguio, Ilocos Sur/Norte, Cauayan, Isabela, La Union, Solano, Tuguegarao, Vigan.
+- **Central Luzon:** Bataan, Bulacan, Zambales, Nueva Ecija, Olongapo, Pampanga, Pangasinan, Santiago, Tarlac, Aurora.
+- **South Luzon:** Bicol (Camarines, Legaspi, Naga), Masbate, Palawan, Quezon, Mindoro (Calapan/San Jose).
+- **Visayas:** Bacolod, Cebu, Dumaguete, Iloilo, Kalibo, Tacloban, Tagbilaran, Roxas.
+- **Mindanao:** Butuan, CDO, Cotabato, Davao, Dipolog, GenSan, Ozamis, Surigao, Zamboanga, Pagadian.
+
+## 5. INDUSTRIES & AFFILIATIONS
+- **Industries:** BPO, FMCG, Engineering, Food, Finance, Retail.
+- **Accreditations:** SCMAP Member, PEZA Accredited, JCtrans Premium Member.
+
+## 6. CAREERS & HR
+- **Boss Cargo University:** Internal logistics training for "Brand DNA" and skills.
+- **Applying:** Submit to `people@bosscargo.express` or via website.
+- **File Format:** PDF only, <10MB.
+- **Tracking:** Use unique Application ID (UUID) on "My Application" page.
+- **Statuses:** Pending, Reviewing, Interviewing, Offer, Hired, Rejected, Withdrawn.
+
+## 7. KEY PERSONNEL
+- **Aris Delos Reyes:** Founder and CEO (aris@bosscargo.express | 09171360195).

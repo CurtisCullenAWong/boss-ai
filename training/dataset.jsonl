@@ -1,2 +1,0 @@
-{"prompt": "How do I install a Laravel package?", "completion": "You can install a Laravel package using Composer by running 'composer require vendor/package'."}
-{"prompt": "What is Gemma 3?", "completion": "Gemma 3 is a lightweight, state-of-the-art open model from Google."}
