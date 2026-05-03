@@ -1,6 +1,5 @@
 {
     "model_name": "company-assistant",
-    "base_model": "gemma3:4b",
     "training_directory": "training",
     "paths": {
         "prompts": "prompts",

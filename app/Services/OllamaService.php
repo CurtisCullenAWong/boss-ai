@@ -27,6 +27,12 @@ class OllamaService
         if (isset($this->options['num_ctx'])) {
             $this->options['num_ctx'] = (int) $this->options['num_ctx'];
         }
+        if (isset($this->options['num_thread'])) {
+            $this->options['num_thread'] = (int) $this->options['num_thread'];
+        }
+        if (isset($this->options['num_gpu'])) {
+            $this->options['num_gpu'] = (int) $this->options['num_gpu'];
+        }
         if (isset($this->options['temperature'])) {
             $this->options['temperature'] = (float) $this->options['temperature'];
         }
@@ -164,11 +170,13 @@ class OllamaService
      */
     public function train(string $modelName, ?string $baseModel = null): ?array
     {
-        $baseModel = $baseModel ?? config('services.ollama.base_model', 'gemma3:4b');
+        $baseModel = $baseModel ?? config('services.ollama.base_model');
         
-        // Ensure base model is available locally
-        Log::info("Checking/Pulling base model: {$baseModel}");
-        $this->pullModel($baseModel);
+        // Ensure base model is available locally before creating the derived model.
+        if (!$this->hasLocalModel($baseModel)) {
+            Log::info("Base model not found locally; pulling model: {$baseModel}");
+            $this->pullModel($baseModel);
+        }
 
         $knowledgeBase = $this->compileKnowledgeBase();
         
@@ -189,6 +197,26 @@ class OllamaService
         File::put(base_path('training/Modelfile'), $modelfileContent);
 
         return $this->createModel($modelName, $modelfileContent, $baseModel);
+    }
+
+    /**
+     * Determine whether a model is already available locally.
+     */
+    public function hasLocalModel(string $name): bool
+    {
+        $models = $this->listModels();
+
+        if (!is_array($models) || !isset($models['models']) || !is_array($models['models'])) {
+            return false;
+        }
+
+        foreach ($models['models'] as $model) {
+            if (is_array($model) && ($model['name'] ?? null) === $name) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -249,6 +277,32 @@ class OllamaService
         } catch (\Exception $e) {
             Log::error('Ollama Service Error (listModels): ' . $e->getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Delete a local model.
+     */
+    public function deleteModel(string $name): bool
+    {
+        try {
+            $response = Http::delete("{$this->baseUrl}/api/delete", [
+                'name' => $name,
+            ]);
+
+            if ($response->failed()) {
+                Log::error('Ollama API deleteModel failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'name' => $name,
+                ]);
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Ollama Service Error (deleteModel): ' . $e->getMessage());
+            return false;
         }
     }
 

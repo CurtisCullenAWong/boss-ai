@@ -13,7 +13,15 @@ class TrainAiModel extends Command
     public function handle(OllamaService $ollama)
     {
         $modelName = $this->option('model');
-        $this->info("Starting AI model training for: {$modelName} (based on gemma3:4b)...");
+        $baseModel = config('services.ollama.base_model');
+
+        $this->info("Starting AI model training for: {$modelName} (based on {$baseModel})...");
+
+        if ($ollama->hasLocalModel($baseModel)) {
+            $this->info("Base model '{$baseModel}' found locally.");
+        } else {
+            $this->warn("Base model '{$baseModel}' not found locally. Pulling it from Ollama now...");
+        }
 
         $result = $ollama->train($modelName);
 

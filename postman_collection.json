@@ -138,7 +138,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"name\": \"gemma3:4b\"\n}"
+					"raw": "{\n    \"name\": \"{{OLLAMA_BASE_MODEL}}\"\n}"
 				},
 				"url": {
 					"raw": "{{base_url}}/api/ollama/pull",
@@ -171,7 +171,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"name\": \"company-assistant\",\n    \"base_model\": \"gemma3:4b\"\n}"
+					"raw": "{\n    \"name\": \"{{OLLAMA_MODEL}}\",\n    \"base_model\": \"{{OLLAMA_BASE_MODEL}}\"\n}"
 				},
 				"url": {
 					"raw": "{{base_url}}/api/ollama/train",

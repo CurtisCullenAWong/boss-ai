@@ -37,15 +37,17 @@ return [
 
     'ollama' => [
         'url' => env('OLLAMA_URL', 'http://localhost:11434'),
-        'base_model' => env('OLLAMA_BASE_MODEL', 'gemma3:4b'),
-        'model' => env('OLLAMA_MODEL', 'gemma3:4b'),
+        'base_model' => env('OLLAMA_BASE_MODEL'),
+        'model' => env('OLLAMA_MODEL'),
         'system_prompt' => env('OLLAMA_SYSTEM_PROMPT'),
         'cache_ttl' => (int) env('OLLAMA_CACHE_TTL', 3600),
         'options' => [
-            'num_ctx' => (int) env('OLLAMA_NUM_CTX', 8192),
-            'temperature' => (float) env('OLLAMA_TEMPERATURE', 0.7),
-            'top_p' => (float) env('OLLAMA_TOP_P', 0.9),
+            'num_ctx' => (int) env('OLLAMA_NUM_CTX', 2048),
+            'temperature' => (float) env('OLLAMA_TEMPERATURE', 0.0),
+            'top_p' => (float) env('OLLAMA_TOP_P', 0.1),
             'repeat_penalty' => (float) env('OLLAMA_REPEAT_PENALTY', 1.1),
+            'num_thread' => (int) env('OLLAMA_NUM_THREAD', 4),
+            'num_gpu' => (int) env('OLLAMA_NUM_GPU', 1),
         ],
     ],
 
