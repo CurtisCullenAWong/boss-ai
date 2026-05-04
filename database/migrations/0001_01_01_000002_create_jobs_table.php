@@ -2,56 +2,133 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Jobs Table
+        |--------------------------------------------------------------------------
+        */
+
         Schema::create('jobs', function (Blueprint $table) {
-            $table->id();
-            $table->string('queue')->index();
-            $table->longText('payload');
-            $table->unsignedSmallInteger('attempts');
-            $table->unsignedInteger('reserved_at')->nullable();
-            $table->unsignedInteger('available_at');
-            $table->unsignedInteger('created_at');
+            $table->uuid('id')
+                ->primary();
+
+            $table->text('title');
+            $table->string('department');
+            $table->string('location');
+            $table->string('type');
+
+            $table->text('description');
+
+            $table->json('responsibilities');
+
+            $table->json('requirements');
+
+            $table->text('salary')->nullable();
+
+            $table->dateTime('posted_date')
+                ->useCurrent();
+
+            $table->enum('status', ['active', 'closed'])
+                ->default('active');
+
+            $table->text('application_url')
+                ->nullable();
+
+            $table->timestamps();
         });
 
-        Schema::create('job_batches', function (Blueprint $table) {
-            $table->string('id')->primary();
-            $table->string('name');
-            $table->integer('total_jobs');
-            $table->integer('pending_jobs');
-            $table->integer('failed_jobs');
-            $table->longText('failed_job_ids');
-            $table->mediumText('options')->nullable();
-            $table->integer('cancelled_at')->nullable();
-            $table->integer('created_at');
-            $table->integer('finished_at')->nullable();
+        /*
+        |--------------------------------------------------------------------------
+        | Job Applicants Table
+        |--------------------------------------------------------------------------
+        */
+
+        Schema::create('job_applicants', function (Blueprint $table) {
+            $table->uuid('id')
+                ->primary();
+
+            $table->uuid('job_id')
+                ->nullable();
+
+            $table->foreign('job_id')
+                ->references('id')
+                ->on('jobs')
+                ->nullOnDelete();
+
+            $table->text('first_name');
+            $table->text('last_name');
+            $table->string('email');
+
+            $table->text('phone')
+                ->nullable();
+
+            $table->text('cover_letter')
+                ->nullable();
+
+            $table->text('resume_url');
+
+            $table->text('linkedin_url')
+                ->nullable();
+
+            $table->text('portfolio_url')
+                ->nullable();
+
+            $table->enum('status', ['Pending', 'Reviewing', 'Interviewing', 'Offer', 'Hired', 'Rejected', 'Withdrawn'])
+                ->default('Pending');
+
+            $table->dateTime('applied_at')
+                ->useCurrent();
+
+            $table->dateTime('updated_at')
+                ->nullable();
+
+            $table->text('updated_by')
+                ->nullable();
+
+            $table->dateTime('created_at')
+                ->useCurrent();
         });
 
-        Schema::create('failed_jobs', function (Blueprint $table) {
-            $table->id();
-            $table->string('uuid')->unique();
-            $table->text('connection');
-            $table->text('queue');
-            $table->longText('payload');
-            $table->longText('exception');
-            $table->timestamp('failed_at')->useCurrent();
+        DB::statement("
+            ALTER TABLE job_applicants
+            ADD CONSTRAINT job_applicants_email_check
+            CHECK (email LIKE '%@%')
+        ");
+
+        /*
+        |--------------------------------------------------------------------------
+        | Indexes
+        |--------------------------------------------------------------------------
+        */
+
+        Schema::table('jobs', function (Blueprint $table) {
+            $table->index('status');
+            $table->index('posted_date');
+            $table->index('department');
+            $table->index('type');
+            $table->index('location');
+        });
+
+        Schema::table('job_applicants', function (Blueprint $table) {
+            $table->index('job_id');
+            $table->index('status');
+            $table->index('applied_at');
+            $table->index('updated_at');
+            $table->unique(['job_id', 'email']);
         });
     }
-
-    /**
-     * Reverse the migrations.
-     */
+    
     public function down(): void
     {
+        Schema::dropIfExists('job_applicants');
         Schema::dropIfExists('jobs');
-        Schema::dropIfExists('job_batches');
-        Schema::dropIfExists('failed_jobs');
     }
 };

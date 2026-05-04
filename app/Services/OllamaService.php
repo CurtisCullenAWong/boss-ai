@@ -126,43 +126,30 @@ class OllamaService
      */
     public function compileKnowledgeBase(): string
     {
-        $knowledgeBase = "";
-        $allowedSourcesPath = base_path('training/allowed_sources.json');
+        $knowledgeBase = [];
+        $sourcePaths = $this->resolveKnowledgeBaseSources();
 
-        if (File::exists($allowedSourcesPath)) {
-            $allowedSources = json_decode(File::get($allowedSourcesPath), true);
-            if (isset($allowedSources['allowed_paths']) && is_array($allowedSources['allowed_paths'])) {
-                foreach ($allowedSources['allowed_paths'] as $path) {
-                    $fullPath = base_path($path);
-                    if (File::exists($fullPath)) {
-                        $knowledgeBase .= File::get($fullPath) . "\n\n";
-                    } else {
-                        Log::warning("Knowledge base source file not found: {$fullPath}");
-                    }
-                }
+        foreach ($sourcePaths as $sourcePath) {
+            if (!File::exists($sourcePath)) {
+                Log::warning("Knowledge base source file not found: {$sourcePath}");
+                continue;
             }
-        } else {
-            $basePath = base_path('training/data');
-            if (File::exists($basePath)) {
-                $compartments = File::directories($basePath);
 
-                foreach ($compartments as $directory) {
-                    $name = basename($directory);
-                    $files = File::allFiles($directory);
-                    $knowledgeBase .= "\n### " . strtoupper($name) . " DATA ###\n";
-                    foreach ($files as $file) {
-                        if (in_array($file->getExtension(), ['txt', 'md', 'json'])) {
-                            $knowledgeBase .= File::get($file->getPathname()) . "\n";
-                        }
-                    }
-                }
+            $content = trim(File::get($sourcePath));
+
+            if ($content === '') {
+                continue;
             }
+
+            $knowledgeBase[] = '### ' . $this->relativeTrainingPath($sourcePath) . " ###\n" . $content;
         }
 
-        // Save reference files for debugging and review
-        File::put(base_path('training/full_knowledge_base.txt'), trim($knowledgeBase));
+        $compiledKnowledgeBase = trim(implode("\n\n", $knowledgeBase));
 
-        return trim($knowledgeBase);
+        // Save reference files for debugging and review
+        File::put(base_path('training/full_knowledge_base.txt'), $compiledKnowledgeBase);
+
+        return $compiledKnowledgeBase;
     }
 
     /**
@@ -179,19 +166,8 @@ class OllamaService
         }
 
         $knowledgeBase = $this->compileKnowledgeBase();
-        
-        // Construct Modelfile with parameters from config
-        $modelfileContent = "FROM {$baseModel}\n";
-        foreach ($this->options as $key => $value) {
-            $modelfileContent .= "PARAMETER {$key} {$value}\n";
-        }
-        
-        $modelfileContent .= "SYSTEM \"\"\"\n" .
-                           trim($this->systemPrompt) . "\n\n" .
-                           "KNOWLEDGE BASE:\n" .
-                           $knowledgeBase . "\n\n" .
-                           "Always use the provided knowledge base to answer questions.\n" .
-                           "\"\"\"";
+
+        $modelfileContent = $this->buildModelfileContent($baseModel, $knowledgeBase);
 
         // Save reference Modelfile for debugging and review
         File::put(base_path('training/Modelfile'), $modelfileContent);
@@ -312,34 +288,49 @@ class OllamaService
     protected function loadSystemPrompt(): string
     {
         $promptsPath = base_path('training/prompts');
-        $configPath = base_path('training/configs/model_config.json');
-        
+
         if (File::isDirectory($promptsPath)) {
-            $promptOrder = [];
-            if (File::exists($configPath)) {
-                $config = json_decode(File::get($configPath), true);
-                $promptOrder = $config['training_options']['prompt_order'] ?? [];
+            $config = $this->loadTrainingConfig();
+            $promptOrder = $config['training_options']['prompt_order'] ?? [];
+            $promptFiles = [];
+            $seenFiles = [];
+
+            foreach ($promptOrder as $promptName) {
+                $file = $promptsPath . '/' . $promptName;
+
+                if (!str_ends_with($file, '.txt')) {
+                    $file .= '.txt';
+                }
+
+                if (File::exists($file)) {
+                    $promptFiles[] = $file;
+                    $seenFiles[realpath($file) ?: $file] = true;
+                }
             }
 
-            if (!empty($promptOrder)) {
-                $prompts = [];
-                foreach ($promptOrder as $promptName) {
-                    $file = $promptsPath . '/' . $promptName . '.txt';
-                    if (File::exists($file)) {
-                        $prompts[] = trim(File::get($file));
-                    }
-                }
-                if (!empty($prompts)) {
-                    return implode("\n\n", $prompts);
-                }
-            }
+            $files = File::files($promptsPath);
+            usort($files, function ($left, $right) {
+                return strcmp($left->getFilename(), $right->getFilename());
+            });
 
-            // Fallback to alphabetical sorting if no order specified
-            $files = File::glob($promptsPath . '/*.txt');
-            sort($files); 
-            
-            $prompts = [];
             foreach ($files as $file) {
+                if ($file->getExtension() !== 'txt') {
+                    continue;
+                }
+
+                $path = $file->getPathname();
+                $key = realpath($path) ?: $path;
+
+                if (isset($seenFiles[$key])) {
+                    continue;
+                }
+
+                $promptFiles[] = $path;
+                $seenFiles[$key] = true;
+            }
+
+            $prompts = [];
+            foreach ($promptFiles as $file) {
                 $prompts[] = trim(File::get($file));
             }
             
@@ -355,5 +346,145 @@ class OllamaService
         }
 
         return config('services.ollama.system_prompt', 'You are a professional company assistant.');
+    }
+
+    /**
+     * Load the training configuration from the training directory.
+     */
+    protected function loadTrainingConfig(): array
+    {
+        $configPath = base_path('training/configs/model_config.json');
+
+        if (!File::exists($configPath)) {
+            return [];
+        }
+
+        $config = json_decode(File::get($configPath), true);
+
+        return is_array($config) ? $config : [];
+    }
+
+    /**
+     * Build a Modelfile from the base model, configuration, and compiled knowledge base.
+     */
+    protected function buildModelfileContent(string $baseModel, string $knowledgeBase): string
+    {
+        $parameters = $this->options;
+
+        $modelfileContent = "FROM {$baseModel}\n";
+
+        foreach ($this->formatModelfileParameters($parameters) as $parameterLine) {
+            $modelfileContent .= $parameterLine . "\n";
+        }
+
+        $modelfileContent .= "SYSTEM \"\"\"\n" .
+            trim($this->systemPrompt) . "\n\n" .
+            "KNOWLEDGE BASE:\n" .
+            $knowledgeBase . "\n\n" .
+            "Always use the provided knowledge base to answer questions.\n" .
+            "\"\"\"";
+
+        return $modelfileContent;
+    }
+
+    /**
+     * Format Modelfile parameters, expanding arrays such as stop sequences.
+     */
+    protected function formatModelfileParameters(array $parameters): array
+    {
+        $lines = [];
+
+        foreach ($parameters as $key => $value) {
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            if (is_array($value)) {
+                foreach ($value as $item) {
+                    if ($item === null || $item === '') {
+                        continue;
+                    }
+
+                    $lines[] = 'PARAMETER ' . $key . ' ' . $this->formatModelfileValue($item);
+                }
+
+                continue;
+            }
+
+            $lines[] = 'PARAMETER ' . $key . ' ' . $this->formatModelfileValue($value);
+        }
+
+        return $lines;
+    }
+
+    /**
+     * Resolve a value into Modelfile syntax.
+     */
+    protected function formatModelfileValue(mixed $value): string
+    {
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if (is_int($value) || is_float($value) || is_numeric($value)) {
+            return (string) $value;
+        }
+
+        return '"' . str_replace('"', '\\"', (string) $value) . '"';
+    }
+
+    /**
+     * Resolve the training knowledge base source files.
+     */
+    protected function resolveKnowledgeBaseSources(): array
+    {
+        $sourcePaths = [];
+        $allowedSourcesPath = base_path('training/allowed_sources.json');
+
+        if (File::exists($allowedSourcesPath)) {
+            $allowedSources = json_decode(File::get($allowedSourcesPath), true);
+
+            if (isset($allowedSources['allowed_paths']) && is_array($allowedSources['allowed_paths'])) {
+                foreach ($allowedSources['allowed_paths'] as $path) {
+                    $sourcePaths[] = $this->resolveTrainingPath($path);
+                }
+
+                return array_values(array_unique($sourcePaths));
+            }
+        }
+
+        $datasetsPath = base_path('training/datasets');
+
+        if (File::isDirectory($datasetsPath)) {
+            foreach (File::allFiles($datasetsPath) as $file) {
+                if (in_array($file->getExtension(), ['txt', 'md', 'json'])) {
+                    $sourcePaths[] = $file->getPathname();
+                }
+            }
+        }
+
+        return array_values(array_unique($sourcePaths));
+    }
+
+    /**
+     * Normalize a training-relative path into an absolute path.
+     */
+    protected function resolveTrainingPath(string $path): string
+    {
+        $normalizedPath = ltrim($path, '/');
+
+        if (str_starts_with($normalizedPath, 'training/')) {
+            return base_path($normalizedPath);
+        }
+
+        return base_path('training/' . $normalizedPath);
+    }
+
+    /**
+     * Convert an absolute path into a training-relative display path.
+     */
+    protected function relativeTrainingPath(string $path): string
+    {
+        return str_replace(base_path() . DIRECTORY_SEPARATOR, '', $path);
     }
 }

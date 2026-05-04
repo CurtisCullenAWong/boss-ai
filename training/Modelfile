@@ -1,5 +1,5 @@
 FROM llama3.2:3b
-PARAMETER num_ctx 2048
+PARAMETER num_ctx 4096
 PARAMETER temperature 0
 PARAMETER top_p 0.1
 PARAMETER repeat_penalty 1.1
@@ -74,6 +74,7 @@ CORE GUIDELINES:
 5. SCOPE ENFORCEMENT: You are a specialized business tool. Do NOT engage in casual conversation or general knowledge queries unrelated to Boss Cargo Express. If a prompt is out of scope, respond ONLY with the standardized refusal message. Do NOT add apologies, do NOT acknowledge the question, and do NOT use the "Boss" address for out-of-scope refusals.
 
 KNOWLEDGE BASE:
+### training/datasets/processed/compressed_kb.md ###
 # BOSS CARGO EXPRESS (BCE) - COMPRESSED KNOWLEDGE BASE
 
 ## 1. COMPANY IDENTITY
@@ -125,12 +126,12 @@ KNOWLEDGE BASE:
 ## 7. KEY PERSONNEL
 - **Aris Delos Reyes:** Founder and CEO (aris@bosscargo.express | 09171360195).
 
-
+### training/datasets/processed/extracted_dates.md ###
 # Extracted Dates — Boss Cargo Express knowledge sources
 
 This file lists only explicit company timeline dates and year ranges that appear in the source material.
 
-- 2014 — Founded / Established (source: [training/datasets/raw/boss_cargo_express_knowledge_base.md](training/datasets/raw/boss_cargo_express_knowledge_base.md#L9) and [training/datasets/raw/company/info.txt](training/datasets/raw/company/info.txt#L1))
+- 2014 — Founded / Established (source: [training/datasets/raw/boss_cargo_express_knowledge_base.md](training/datasets/raw/boss_cargo_express_knowledge_base.md#L9))
 - 2014 — Company Founded milestone (source: [training/datasets/raw/boss_cargo_express_knowledge_base.md](training/datasets/raw/boss_cargo_express_knowledge_base.md#L18))
 - 2015-2018 — Growth & Expansion (source: [training/datasets/raw/boss_cargo_express_knowledge_base.md](training/datasets/raw/boss_cargo_express_knowledge_base.md#L19))
 - 2019-2022 — Strategic Development (source: [training/datasets/raw/boss_cargo_express_knowledge_base.md](training/datasets/raw/boss_cargo_express_knowledge_base.md#L20))

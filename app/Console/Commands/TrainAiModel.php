@@ -7,7 +7,7 @@ use Illuminate\Console\Command;
 
 class TrainAiModel extends Command
 {
-    protected $signature = 'ai:train {--model=company-assistant : The name of the resulting model}';
+    protected $signature = 'ai:train {--model=company-chatbot : The name of the resulting model}';
     protected $description = 'Compile training data and create a specialized Ollama model';
 
     public function handle(OllamaService $ollama)
