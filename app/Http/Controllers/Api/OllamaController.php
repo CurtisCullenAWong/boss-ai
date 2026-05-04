@@ -34,6 +34,22 @@ class OllamaController extends Controller
             ];
         }
 
+        $scopePrompt = $this->extractLatestUserPrompt($messages, (string) $request->input('prompt'));
+
+        if (!$this->ollama->isInScopePrompt($scopePrompt)) {
+            return response()->json([
+                'model' => config('services.ollama.model'),
+                'created_at' => now()->toISOString(),
+                'message' => [
+                    'role' => 'assistant',
+                    'content' => $this->ollama->outOfScopeRefusal($scopePrompt),
+                ],
+                'done' => true,
+                'done_reason' => 'stop',
+                'guardrail' => 'out_of_scope_blocked',
+            ]);
+        }
+
         $result = $this->ollama->chat($messages);
 
         if (!$result) {
@@ -52,7 +68,20 @@ class OllamaController extends Controller
             'prompt' => 'required|string',
         ]);
 
-        $result = $this->ollama->generate($request->input('prompt'));
+        $prompt = (string) $request->input('prompt');
+
+        if (!$this->ollama->isInScopePrompt($prompt)) {
+            return response()->json([
+                'model' => config('services.ollama.model'),
+                'created_at' => now()->toISOString(),
+                'response' => $this->ollama->outOfScopeRefusal($prompt),
+                'done' => true,
+                'done_reason' => 'stop',
+                'guardrail' => 'out_of_scope_blocked',
+            ]);
+        }
+
+        $result = $this->ollama->generate($prompt);
 
         if (!$result) {
             return response()->json(['error' => 'Failed to communicate with Ollama'], 500);
@@ -127,5 +156,31 @@ class OllamaController extends Controller
             'configured_model' => config('services.ollama.model'),
             'base_url' => config('services.ollama.url'),
         ]);
+    }
+
+    /**
+     * Extract the newest user message content from a message list.
+     */
+    protected function extractLatestUserPrompt(array $messages, string $fallbackPrompt): string
+    {
+        for ($index = count($messages) - 1; $index >= 0; $index--) {
+            $message = $messages[$index] ?? null;
+
+            if (!is_array($message)) {
+                continue;
+            }
+
+            if (($message['role'] ?? null) !== 'user') {
+                continue;
+            }
+
+            $content = $message['content'] ?? '';
+
+            if (is_string($content) && trim($content) !== '') {
+                return $content;
+            }
+        }
+
+        return $fallbackPrompt;
     }
 }

@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\File;
 
 class OllamaService
 {
+    protected const OUT_OF_SCOPE_REFUSAL_EN = 'I am the Boss Cargo Express AI. I only assist with inquiries related to our company and logistics services. For other matters, please contact info@bosscargo.express.';
+    protected const OUT_OF_SCOPE_REFUSAL_FIL = 'Ako ang Boss Cargo Express AI. Tumutulong lamang ako sa mga tanong tungkol sa aming kumpanya at serbisyo sa logistika. Para sa ibang usapin, mangyaring mag-email sa info@bosscargo.express.';
     protected string $baseUrl;
     protected string $model;
     protected string $systemPrompt;
@@ -89,36 +91,84 @@ class OllamaService
     public function generate(string $prompt, array $customOptions = [])
     {
         try {
-            $cacheKey = 'ollama_gen_' . md5(json_encode([
-                'model' => $this->model,
-                'prompt' => $prompt,
-                'options' => array_merge($this->options, $customOptions)
-            ]));
+            // Always call the API (do not cache) so each generation can differ.
+            $response = Http::timeout(120)
+                ->post("{$this->baseUrl}/api/generate", [
+                    'model' => $this->model,
+                    'prompt' => $prompt,
+                    'system' => $this->systemPrompt,
+                    'stream' => false,
+                    'options' => array_merge($this->options, $customOptions),
+                ]);
 
-            return Cache::remember($cacheKey, $this->cacheTtl, function () use ($prompt, $customOptions) {
-                $response = Http::timeout(120)
-                    ->post("{$this->baseUrl}/api/generate", [
-                        'model' => $this->model,
-                        'prompt' => $prompt,
-                        'system' => $this->systemPrompt,
-                        'stream' => false,
-                        'options' => array_merge($this->options, $customOptions),
-                    ]);
+            if ($response->failed()) {
+                Log::error('Ollama API generate request failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+                return null;
+            }
 
-                if ($response->failed()) {
-                    Log::error('Ollama API generate request failed', [
-                        'status' => $response->status(),
-                        'body' => $response->body(),
-                    ]);
-                    return null;
-                }
-
-                return $response->json();
-            });
+            return $response->json();
         } catch (\Exception $e) {
             Log::error('Ollama Service Error (generate): ' . $e->getMessage());
             return null;
         }
+    }
+
+    /**
+     * Quick scope filter to avoid expensive model calls for unrelated prompts.
+     */
+    public function isInScopePrompt(string $prompt): bool
+    {
+        $p = strtolower(trim($prompt));
+
+        if ($p === '') {
+            return false;
+        }
+
+        // Build or fetch training-derived vocabulary (cached)
+        $vocab = $this->buildScopeVocabulary();
+
+        // Tokenize prompt into normalized words and bigrams
+        $promptTokens = $this->tokenizeText($p);
+
+        if (empty($promptTokens)) {
+            return false;
+        }
+
+        // Count overlaps with the training vocabulary
+        $overlap = 0;
+        foreach ($promptTokens as $t) {
+            if (isset($vocab[$t])) {
+                $overlap++;
+            }
+        }
+
+        $promptTokenCount = count($promptTokens);
+
+        // If there's any direct overlap with training data, allow the prompt.
+        if ($overlap > 0) {
+            return true;
+        }
+
+        // For longer prompts with zero overlap, treat as out-of-scope to avoid costly generations.
+        if ($promptTokenCount >= 5) {
+            return false;
+        }
+
+        // Short prompts with no overlap: allow (likely ambiguous/short queries).
+        return true;
+    }
+
+    /**
+     * Return the standardized out-of-scope refusal in the user's language.
+     */
+    public function outOfScopeRefusal(string $prompt): string
+    {
+        return $this->isLikelyFilipino($prompt)
+            ? self::OUT_OF_SCOPE_REFUSAL_FIL
+            : self::OUT_OF_SCOPE_REFUSAL_EN;
     }
 
     /**
@@ -141,7 +191,11 @@ class OllamaService
                 continue;
             }
 
-            $knowledgeBase[] = '### ' . $this->relativeTrainingPath($sourcePath) . " ###\n" . $content;
+            // Remove obsolete source references and directory paths from the content to keep the knowledge base clean
+            $content = preg_replace('/\s*\(source: \[.*?\]\(.*?\/datasets\/raw\/.*?\)\)/i', '', $content);
+            $content = preg_replace('/\s*\(source: .*?\/datasets\/raw\/.*?\)/i', '', $content);
+
+            $knowledgeBase[] = '### ' . $this->relativeTrainingPath($sourcePath) . " ###\n" . trim($content);
         }
 
         $compiledKnowledgeBase = trim(implode("\n\n", $knowledgeBase));
@@ -446,19 +500,51 @@ class OllamaService
 
             if (isset($allowedSources['allowed_paths']) && is_array($allowedSources['allowed_paths'])) {
                 foreach ($allowedSources['allowed_paths'] as $path) {
-                    $sourcePaths[] = $this->resolveTrainingPath($path);
+                    $resolvedPath = $this->resolveTrainingPath($path);
+                    
+                    // Skip obsolete directories even if listed in allowed_sources
+                    $normalized = str_replace('\\', '/', $resolvedPath);
+                    if (str_contains($normalized, '/datasets/raw/') || str_contains($normalized, '/datasets/validation/')) {
+                        continue;
+                    }
+                    
+                    $sourcePaths[] = $resolvedPath;
                 }
 
                 return array_values(array_unique($sourcePaths));
             }
         }
 
-        $datasetsPath = base_path('training/datasets');
+        // If no allowed_sources.json is provided, include all useful files
+        // under the training directory so `ai:train` uses the entire tree.
+        $trainingPath = base_path('training');
 
-        if (File::isDirectory($datasetsPath)) {
-            foreach (File::allFiles($datasetsPath) as $file) {
-                if (in_array($file->getExtension(), ['txt', 'md', 'json'])) {
-                    $sourcePaths[] = $file->getPathname();
+        if (File::isDirectory($trainingPath)) {
+            $allowedExts = ['txt', 'md', 'json', 'jsonl', 'csv', 'yaml', 'yml'];
+
+            foreach (File::allFiles($trainingPath) as $file) {
+                $path = $file->getPathname();
+                $normalized = str_replace('\\', '/', $path);
+                
+                // Skip obsolete directories
+                if (str_contains($normalized, '/datasets/raw/') || str_contains($normalized, '/datasets/validation/')) {
+                    continue;
+                }
+
+                $ext = strtolower($file->getExtension());
+
+                if ($ext === '') {
+                    // include files without extension only if they are named like full_knowledge_base or similar
+                    $name = $file->getFilename();
+                    if (in_array($name, ['full_knowledge_base.txt', 'Modelfile', 'full_system_prompt.txt']) || str_ends_with($name, '.txt')) {
+                        $sourcePaths[] = $path;
+                    }
+
+                    continue;
+                }
+
+                if (in_array($ext, $allowedExts, true)) {
+                    $sourcePaths[] = $path;
                 }
             }
         }
@@ -486,5 +572,71 @@ class OllamaService
     protected function relativeTrainingPath(string $path): string
     {
         return str_replace(base_path() . DIRECTORY_SEPARATOR, '', $path);
+    }
+
+    /**
+     * Lightweight language hinting for refusal localization.
+     */
+    protected function isLikelyFilipino(string $prompt): bool
+    {
+        return (bool) preg_match('/\b(ano|paano|saan|kailan|magkano|serbisyo|kumpanya|trabaho|aplikasyon|logistika|mangyaring|tungkol)\b/i', $prompt);
+    }
+
+    /**
+     * Build a vocabulary (words + bigrams) derived from training data.
+     * Cached to avoid repeated expensive parsing.
+     */
+    protected function buildScopeVocabulary(): array
+    {
+        return Cache::remember('ollama_scope_vocab', 86400, function () {
+            $text = $this->compileKnowledgeBase();
+
+            // Also include modular prompts
+            $promptsPath = base_path('training/prompts');
+            if (File::isDirectory($promptsPath)) {
+                foreach (File::files($promptsPath) as $f) {
+                    $text .= "\n" . File::get($f->getPathname());
+                }
+            }
+
+            $tokens = $this->tokenizeText($text);
+
+            // Build a set for fast lookup
+            $set = [];
+            foreach ($tokens as $t) {
+                $set[$t] = true;
+            }
+
+            return $set;
+        });
+    }
+
+    /**
+     * Tokenize text into normalized unigrams and bigrams.
+     */
+    protected function tokenizeText(string $text): array
+    {
+        $text = strtolower($text);
+
+        // Replace non-alphanumeric with spaces
+        $clean = preg_replace('/[^a-z0-9]+/i', ' ', $text);
+        $words = array_values(array_filter(array_map('trim', explode(' ', $clean)), function ($w) {
+            return $w !== '' && strlen($w) >= 3;
+        }));
+
+        $tokens = [];
+
+        // add unigrams
+        foreach ($words as $w) {
+            $tokens[] = $w;
+        }
+
+        // add bigrams
+        for ($i = 0, $len = count($words); $i + 1 < $len; $i++) {
+            $tokens[] = $words[$i] . ' ' . $words[$i + 1];
+        }
+
+        // return unique tokens
+        return array_values(array_unique($tokens));
     }
 }
