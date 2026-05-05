@@ -1,0 +1,6 @@
+{
+  "allowed_paths": [
+    "training/sources/knowledge/02_processed/compressed_kb.md",
+    "training/sources/knowledge/02_processed/extracted_dates.md"
+  ]
+}

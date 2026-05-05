@@ -29,9 +29,9 @@
 
 ## 4. SERVICE NETWORK
 - **Main Hubs:** Las Piñas (HQ), Parañaque, Taytay.
-- **North Luzon:** Abra, Aparri, Baguio, Ilocos Sur/Norte, Cauayan, Isabela, La Union, Solano, Tuguegarao, Vigan.
-- **Central Luzon:** Bataan, Bulacan, Zambales, Nueva Ecija, Olongapo, Pampanga, Pangasinan, Santiago, Tarlac, Aurora.
-- **South Luzon:** Bicol (Camarines, Legaspi, Naga), Masbate, Palawan, Quezon, Mindoro (Calapan/San Jose).
+- **North Luzon:** Abra, Baguio, Ilocos, Isabela, La Union, Tuguegarao.
+- **Central Luzon:** Bataan, Bulacan, Zambales, Nueva Ecija, Olongapo, Pampanga, Pangasinan, Tarlac.
+- **South Luzon:** Bicol, Masbate, Palawan, Quezon, Mindoro.
 - **Visayas:** Bacolod, Cebu, Dumaguete, Iloilo, Kalibo, Tacloban, Tagbilaran, Roxas.
 - **Mindanao:** Butuan, CDO, Cotabato, Davao, Dipolog, GenSan, Ozamis, Surigao, Zamboanga, Pagadian.
 

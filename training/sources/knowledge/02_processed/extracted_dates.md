@@ -3,7 +3,6 @@
 This file lists only explicit company timeline dates and year ranges that appear in the source material.
 
 - 2014 — Founded / Established
-- 2014 — Company Founded milestone
 - 2015-2018 — Growth & Expansion
 - 2019-2022 — Strategic Development
 - 2023-Present — Technology & Sustainability focus

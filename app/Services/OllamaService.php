@@ -195,13 +195,13 @@ class OllamaService
             $content = preg_replace('/\s*\(source: \[.*?\]\(.*?\/datasets\/raw\/.*?\)\)/i', '', $content);
             $content = preg_replace('/\s*\(source: .*?\/datasets\/raw\/.*?\)/i', '', $content);
 
-            $knowledgeBase[] = '### ' . $this->relativeTrainingPath($sourcePath) . " ###\n" . trim($content);
+            $knowledgeBase[] = trim($content);
         }
 
         $compiledKnowledgeBase = trim(implode("\n\n", $knowledgeBase));
 
         // Save reference files for debugging and review
-        File::put(base_path('training/full_knowledge_base.txt'), $compiledKnowledgeBase);
+        File::put(base_path('training/build/full_knowledge_base.txt'), $compiledKnowledgeBase);
 
         return $compiledKnowledgeBase;
     }
@@ -224,7 +224,7 @@ class OllamaService
         $modelfileContent = $this->buildModelfileContent($baseModel, $knowledgeBase);
 
         // Save reference Modelfile for debugging and review
-        File::put(base_path('training/Modelfile'), $modelfileContent);
+        File::put(base_path('training/build/Modelfile'), $modelfileContent);
 
         return $this->createModel($modelName, $modelfileContent, $baseModel);
     }
@@ -341,7 +341,7 @@ class OllamaService
      */
     protected function loadSystemPrompt(): string
     {
-        $promptsPath = base_path('training/prompts');
+        $promptsPath = base_path('training/sources/prompts');
 
         if (File::isDirectory($promptsPath)) {
             $config = $this->loadTrainingConfig();
@@ -394,7 +394,7 @@ class OllamaService
         }
 
         // Fallback to legacy single file or config
-        $legacyPath = base_path('training/system_prompt.txt');
+        $legacyPath = base_path('training/build/full_system_prompt.txt');
         if (File::exists($legacyPath)) {
             return trim(File::get($legacyPath));
         }
@@ -407,7 +407,7 @@ class OllamaService
      */
     protected function loadTrainingConfig(): array
     {
-        $configPath = base_path('training/configs/model_config.json');
+        $configPath = base_path('training/config/model_config.json');
 
         if (!File::exists($configPath)) {
             return [];
@@ -435,7 +435,11 @@ class OllamaService
             trim($this->systemPrompt) . "\n\n" .
             "KNOWLEDGE BASE:\n" .
             $knowledgeBase . "\n\n" .
-            "Always use the provided knowledge base to answer questions.\n" .
+            "INSTRUCTIONS:\n" .
+            "- Always use the provided knowledge base to answer questions.\n" .
+            "- Answer questions as if the information is inherent to your own memory.\n" .
+            "- NEVER mention that you are using a 'knowledge base', 'training data', or 'source files'.\n" .
+            "- If the user's question is unrelated to the company or customer support, respond only with the standardized refusal message defined in your safety guidelines.\n" .
             "\"\"\"";
 
         return $modelfileContent;
@@ -493,7 +497,7 @@ class OllamaService
     protected function resolveKnowledgeBaseSources(): array
     {
         $sourcePaths = [];
-        $allowedSourcesPath = base_path('training/allowed_sources.json');
+        $allowedSourcesPath = base_path('training/config/allowed_sources.json');
 
         if (File::exists($allowedSourcesPath)) {
             $allowedSources = json_decode(File::get($allowedSourcesPath), true);
@@ -504,7 +508,7 @@ class OllamaService
                     
                     // Skip obsolete directories even if listed in allowed_sources
                     $normalized = str_replace('\\', '/', $resolvedPath);
-                    if (str_contains($normalized, '/datasets/raw/') || str_contains($normalized, '/datasets/validation/')) {
+                    if (str_contains($normalized, '/sources/knowledge/01_raw/') || str_contains($normalized, '/sources/knowledge/03_validation/')) {
                         continue;
                     }
                     
@@ -527,7 +531,7 @@ class OllamaService
                 $normalized = str_replace('\\', '/', $path);
                 
                 // Skip obsolete directories
-                if (str_contains($normalized, '/datasets/raw/') || str_contains($normalized, '/datasets/validation/')) {
+                if (str_contains($normalized, '/sources/knowledge/01_raw/') || str_contains($normalized, '/sources/knowledge/03_validation/')) {
                     continue;
                 }
 
@@ -592,7 +596,7 @@ class OllamaService
             $text = $this->compileKnowledgeBase();
 
             // Also include modular prompts
-            $promptsPath = base_path('training/prompts');
+            $promptsPath = base_path('training/sources/prompts');
             if (File::isDirectory($promptsPath)) {
                 foreach (File::files($promptsPath) as $f) {
                     $text .= "\n" . File::get($f->getPathname());

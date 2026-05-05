@@ -1,4 +1,3 @@
-### training/datasets/processed/compressed_kb.md ###
 # BOSS CARGO EXPRESS (BCE) - COMPRESSED KNOWLEDGE BASE
 
 ## 1. COMPANY IDENTITY
@@ -30,9 +29,9 @@
 
 ## 4. SERVICE NETWORK
 - **Main Hubs:** Las Piñas (HQ), Parañaque, Taytay.
-- **North Luzon:** Abra, Aparri, Baguio, Ilocos Sur/Norte, Cauayan, Isabela, La Union, Solano, Tuguegarao, Vigan.
-- **Central Luzon:** Bataan, Bulacan, Zambales, Nueva Ecija, Olongapo, Pampanga, Pangasinan, Santiago, Tarlac, Aurora.
-- **South Luzon:** Bicol (Camarines, Legaspi, Naga), Masbate, Palawan, Quezon, Mindoro (Calapan/San Jose).
+- **North Luzon:** Abra, Baguio, Ilocos, Isabela, La Union, Tuguegarao.
+- **Central Luzon:** Bataan, Bulacan, Zambales, Nueva Ecija, Olongapo, Pampanga, Pangasinan, Tarlac.
+- **South Luzon:** Bicol, Masbate, Palawan, Quezon, Mindoro.
 - **Visayas:** Bacolod, Cebu, Dumaguete, Iloilo, Kalibo, Tacloban, Tagbilaran, Roxas.
 - **Mindanao:** Butuan, CDO, Cotabato, Davao, Dipolog, GenSan, Ozamis, Surigao, Zamboanga, Pagadian.
 
@@ -50,13 +49,11 @@
 ## 7. KEY PERSONNEL
 - **Aris Delos Reyes:** Founder and CEO (aris@bosscargo.express | 09171360195).
 
-### training/datasets/processed/extracted_dates.md ###
 # Extracted Dates — Boss Cargo Express knowledge sources
 
 This file lists only explicit company timeline dates and year ranges that appear in the source material.
 
 - 2014 — Founded / Established
-- 2014 — Company Founded milestone
 - 2015-2018 — Growth & Expansion
 - 2019-2022 — Strategic Development
 - 2023-Present — Technology & Sustainability focus

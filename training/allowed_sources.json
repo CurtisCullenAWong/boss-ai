@@ -1,6 +1,0 @@
-{
-  "allowed_paths": [
-    "training/datasets/processed/compressed_kb.md",
-    "training/datasets/processed/extracted_dates.md"
-  ]
-}
