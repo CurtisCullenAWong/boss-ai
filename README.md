@@ -2,14 +2,16 @@
 
 Boss AI is a Laravel-based intelligent assistant designed for Boss Cargo Express. It leverages local Large Language Models (LLMs) via Ollama to provide accurate information about company services, history, and operations.
 
-## 🚀 Features
+## Features
 
 - **Local LLM Integration**: Uses Ollama to run models locally, ensuring data privacy and low latency.
 - **Custom Knowledge Base**: Trained on Boss Cargo Express specific data.
+- **Behavioral Guardrails**: Strict scope enforcement for logistics and customer support queries.
+- **Inherent Knowledge**: Responses feel natural and integrated, avoiding mentions of underlying knowledge bases or training files.
 - **Agentic Workflow**: Built with Laravel conventions for robust AI interactions.
 - **Dockerized Environment**: Fully containerized using Laravel Sail.
 
-## 🛠 Prerequisites
+## Prerequisites
 
 Before you begin, ensure you have the following installed:
 
@@ -18,7 +20,7 @@ Before you begin, ensure you have the following installed:
 - [Composer](https://getcomposer.org/)
 - [Node.js & NPM](https://nodejs.org/)
 
-## 📥 Getting Started
+## Getting Started
 
 ### 1. Clone the Repository
 
@@ -82,9 +84,9 @@ docker run --rm \
 ./vendor/bin/sail npm run dev
 ```
 
-## 🤖 AI Model Setup
+## AI Model Setup
 
-Boss AI uses specific commands to manage the local models.
+Boss AI uses specific commands to manage the local models and enforce behavioral guardrails.
 
 ### Pull the Base Model
 Ensure your Ollama instance has the required base model:
@@ -93,10 +95,16 @@ Ensure your Ollama instance has the required base model:
 ```
 
 ### Train/Configure the Custom Model
-Initialize the custom model with the company knowledge base:
+Initialize the custom model with the company knowledge base and behavioral rules:
 ```bash
 ./vendor/bin/sail artisan ai:train
 ```
+
+### Behavioral Guardrails
+The AI is configured to:
+- Only answer questions related to Boss Cargo Express or logistics support.
+- Provide minimal effort/refusals for irrelevant queries.
+- Act as if its knowledge is inherent, never mentioning source files or training data.
 
 ### List Available Models
 Check the status of models in your Ollama instance:
@@ -104,12 +112,12 @@ Check the status of models in your Ollama instance:
 ./vendor/bin/sail artisan ai:list
 ```
 
-## 📂 Project Structure
+## Project Structure
 
 - `app/Console/Commands`: Contains AI-related artisan commands (`ai:pull`, `ai:train`, etc.)
 - `training/`: Directory containing source data for model training.
 - `compose.yaml`: Docker configuration including PHP, MySQL, and Ollama.
 
-## 📄 License
+## License
 
 The Boss AI project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

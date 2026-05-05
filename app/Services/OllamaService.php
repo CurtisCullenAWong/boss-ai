@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\File;
 
 class OllamaService
 {
-    protected const OUT_OF_SCOPE_REFUSAL_EN = 'I am the Boss Cargo Express AI. I only assist with inquiries related to our company and logistics services. For other matters, please contact info@bosscargo.express.';
-    protected const OUT_OF_SCOPE_REFUSAL_FIL = 'Ako ang Boss Cargo Express AI. Tumutulong lamang ako sa mga tanong tungkol sa aming kumpanya at serbisyo sa logistika. Para sa ibang usapin, mangyaring mag-email sa info@bosscargo.express.';
+    protected const OUT_OF_SCOPE_REFUSAL_EN = 'Regarding your inquiry, I am the Boss Cargo Express AI. I only assist with inquiries related to our company and logistics services. For other matters, please contact info@bosscargo.express.';
+    protected const OUT_OF_SCOPE_REFUSAL_FIL = 'Ukol sa iyong katanungan, ako ang Boss Cargo Express AI. Tumutulong lamang ako sa mga tanong tungkol sa aming kumpanya at serbisyo sa logistika. Para sa ibang usapin, mangyaring mag-email sa info@bosscargo.express.';
     protected string $baseUrl;
     protected string $model;
     protected string $systemPrompt;
