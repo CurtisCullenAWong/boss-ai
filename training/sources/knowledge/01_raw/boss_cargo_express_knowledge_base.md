@@ -123,11 +123,6 @@ Our aspiration to continually empower and educate our employees has led us to es
 - **Facebook:** [ikawangbossko20](https://www.facebook.com/ikawangbossko20)
 - **LinkedIn:** [Boss Cargo Express](https://www.linkedin.com/company/boss-cargo-express/)
 
-## 8. Key Leadership
-- **Aris Delos Reyes:** Founder and CEO.
-  - *Email:* aris@bosscargo.express
-  - *Phone:* 09171360195
-
 ## 9. Frequently Asked Questions (FAQs)
 **Q: What industries does Boss Cargo Express serve?**
 A: We serve a wide range of industries including BPO, FMCG, Engineering, Food Services, Financial Services, and Retail.

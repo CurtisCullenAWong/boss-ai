@@ -46,6 +46,3 @@
 - **Options:** Specific open positions or "General Application".
 - **File Format:** PDF only, <10MB.
 - **Tracking:** Use unique Application ID (UUID) on "My Application" page.
-
-## 7. KEY PERSONNEL
-- **Aris Delos Reyes:** Founder and CEO (aris@bosscargo.express | 09171360195).

@@ -47,9 +47,6 @@
 - **File Format:** PDF only, <10MB.
 - **Tracking:** Use unique Application ID (UUID) on "My Application" page.
 
-## 7. KEY PERSONNEL
-- **Aris Delos Reyes:** Founder and CEO (aris@bosscargo.express | 09171360195).
-
 # Extracted Dates — Boss Cargo Express knowledge sources
 
 This file lists only explicit company timeline dates and year ranges that appear in the source material.
