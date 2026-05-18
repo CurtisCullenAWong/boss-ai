@@ -219,14 +219,46 @@ class OllamaService
             $this->pullModel($baseModel);
         }
 
-        $knowledgeBase = $this->compileKnowledgeBase();
-
-        $modelfileContent = $this->buildModelfileContent($baseModel, $knowledgeBase);
+        $modelfileContent = $this->buildModelfileContent($baseModel, false);
 
         // Save reference Modelfile for debugging and review
         File::put(base_path('training/build/Modelfile'), $modelfileContent);
 
-        return $this->createModel($modelName, $modelfileContent, $baseModel);
+        return $this->createModel(
+            $modelName,
+            $modelfileContent,
+            $baseModel,
+            $this->getFullSystemPrompt(),
+            $this->getLocalOptions()
+        );
+    }
+
+    /**
+     * Train a cloud model based on the current configuration and training data,
+     * generating a cloud-formatted Modelfile.
+     */
+    public function trainCloud(string $modelName, ?string $baseModel = null): ?array
+    {
+        $baseModel = $baseModel ?? config('services.ollama.cloud_base_model') ?? config('services.ollama.base_model');
+        
+        // Ensure base model is available locally before creating the derived model.
+        if (!$this->hasLocalModel($baseModel)) {
+            Log::info("Base model not found locally; pulling model: {$baseModel}");
+            $this->pullModel($baseModel);
+        }
+
+        $modelfileContent = $this->buildModelfileContent($baseModel, true);
+
+        // Save reference CloudModelfile for debugging and review
+        File::put(base_path('training/build/CloudModelfile'), $modelfileContent);
+
+        return $this->createModel(
+            $modelName,
+            $modelfileContent,
+            $baseModel,
+            $this->getFullSystemPrompt(),
+            $this->getCloudOptions()
+        );
     }
 
     /**
@@ -240,9 +272,16 @@ class OllamaService
             return false;
         }
 
+        $searchName = str_contains($name, ':') ? $name : $name . ':latest';
+
         foreach ($models['models'] as $model) {
-            if (is_array($model) && ($model['name'] ?? null) === $name) {
-                return true;
+            if (is_array($model) && isset($model['name'])) {
+                $modelName = $model['name'];
+                $normalizedModelName = str_contains($modelName, ':') ? $modelName : $modelName . ':latest';
+
+                if ($normalizedModelName === $searchName || $modelName === $name) {
+                    return true;
+                }
             }
         }
 
@@ -252,15 +291,28 @@ class OllamaService
     /**
      * Create a new model from a Modelfile.
      */
-    public function createModel(string $name, string $modelfile, ?string $from = null, bool $stream = false)
+    public function createModel(string $name, string $modelfile, ?string $from = null, ?string $systemPrompt = null, ?array $parameters = null, bool $stream = false)
     {
         try {
-            $response = Http::timeout(300)->post("{$this->baseUrl}/api/create", [
+            $payload = [
                 'name' => $name,
                 'modelfile' => $modelfile,
-                'from' => $from,
                 'stream' => $stream,
-            ]);
+            ];
+
+            if ($from !== null && $from !== '') {
+                $payload['from'] = $from;
+            }
+
+            if ($systemPrompt !== null && $systemPrompt !== '') {
+                $payload['system'] = $systemPrompt;
+            }
+
+            if ($parameters !== null && is_array($parameters)) {
+                $payload['parameters'] = $parameters;
+            }
+
+            $response = Http::timeout(300)->post("{$this->baseUrl}/api/create", $payload);
 
             if ($response->failed()) {
                 Log::error('Ollama API createModel failed', [
@@ -333,6 +385,61 @@ class OllamaService
         } catch (\Exception $e) {
             Log::error('Ollama Service Error (deleteModel): ' . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Copy a local model to another name.
+     */
+    public function copyModel(string $source, string $destination): bool
+    {
+        try {
+            $response = Http::timeout(300)->post("{$this->baseUrl}/api/copy", [
+                'source' => $source,
+                'destination' => $destination,
+            ]);
+
+            if ($response->failed()) {
+                Log::error('Ollama API copyModel failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'source' => $source,
+                    'destination' => $destination,
+                ]);
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Ollama Service Error (copyModel): ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Push a model to the Ollama library.
+     */
+    public function pushModel(string $model, bool $stream = false)
+    {
+        try {
+            $response = Http::timeout(3600)->post("{$this->baseUrl}/api/push", [
+                'model' => $model,
+                'stream' => $stream,
+            ]);
+
+            if ($response->failed()) {
+                Log::error('Ollama API pushModel failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'model' => $model,
+                ]);
+                return null;
+            }
+
+            return $response->successful() ? $response->json() : null;
+        } catch (\Exception $e) {
+            Log::error('Ollama Service Error (pushModel): ' . $e->getMessage());
+            return null;
         }
     }
 
@@ -418,12 +525,38 @@ class OllamaService
         return is_array($config) ? $config : [];
     }
 
+    public function getFullSystemPrompt(): string
+    {
+        $knowledgeBase = $this->compileKnowledgeBase();
+        return trim($this->systemPrompt) . "\n\n" .
+            "KNOWLEDGE BASE:\n" .
+            $knowledgeBase . "\n\n" .
+            "INSTRUCTIONS:\n" .
+            "- Always use the provided knowledge base to answer questions.\n" .
+            "- Answer questions as if the information is inherent to your own memory.\n" .
+            "- NEVER mention that you are using a 'knowledge base', 'training data', or 'source files'.\n" .
+            "- If the user's question is unrelated to the company or customer support, respond only with the standardized refusal message defined in your safety guidelines.";
+    }
+
+    public function getCloudOptions(): array
+    {
+        $parameters = $this->options;
+        unset($parameters['num_thread']);
+        unset($parameters['num_gpu']);
+        return $parameters;
+    }
+
+    public function getLocalOptions(): array
+    {
+        return $this->options;
+    }
+
     /**
      * Build a Modelfile from the base model, configuration, and compiled knowledge base.
      */
-    protected function buildModelfileContent(string $baseModel, string $knowledgeBase): string
+    protected function buildModelfileContent(string $baseModel, bool $isCloud = false): string
     {
-        $parameters = $this->options;
+        $parameters = $isCloud ? $this->getCloudOptions() : $this->getLocalOptions();
 
         $modelfileContent = "FROM {$baseModel}\n";
 
@@ -432,18 +565,12 @@ class OllamaService
         }
 
         $modelfileContent .= "SYSTEM \"\"\"\n" .
-            trim($this->systemPrompt) . "\n\n" .
-            "KNOWLEDGE BASE:\n" .
-            $knowledgeBase . "\n\n" .
-            "INSTRUCTIONS:\n" .
-            "- Always use the provided knowledge base to answer questions.\n" .
-            "- Answer questions as if the information is inherent to your own memory.\n" .
-            "- NEVER mention that you are using a 'knowledge base', 'training data', or 'source files'.\n" .
-            "- If the user's question is unrelated to the company or customer support, respond only with the standardized refusal message defined in your safety guidelines.\n" .
+            $this->getFullSystemPrompt() . "\n" .
             "\"\"\"";
 
         return $modelfileContent;
     }
+
 
     /**
      * Format Modelfile parameters, expanding arrays such as stop sequences.
