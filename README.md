@@ -1,15 +1,17 @@
-# Boss AI - Intelligent Cargo Assistant
+# Boss AI - Ollama Laravel Controller with Kokoro Text-to-Speech
 
-Boss AI is a Laravel-based intelligent assistant designed for Boss Cargo Express. It leverages local Large Language Models (LLMs) via Ollama to provide accurate information about company services, history, and operations.
+Boss AI is a Laravel-based controller and intelligent assistant designed for Boss Cargo Express. It integrates local Large Language Models (LLMs) via Ollama and realistic, low-latency audio generation via a containerized Kokoro Text-to-Speech (TTS) service.
 
 ## Features
 
 - **Local LLM Integration**: Uses Ollama to run models locally, ensuring data privacy and low latency.
+- **Kokoro Text-to-Speech**: Seamlessly streams high-quality, realistic audio generation on CPU with low latency.
+- **Dynamic Audio Streaming**: Leverages Symfony streamed responses to pipe audio chunks to the client immediately as they are generated.
 - **Custom Knowledge Base**: Trained on Boss Cargo Express specific data.
 - **Behavioral Guardrails**: Strict scope enforcement for logistics and customer support queries.
 - **Inherent Knowledge**: Responses feel natural and integrated, avoiding mentions of underlying knowledge bases or training files.
-- **Agentic Workflow**: Built with Laravel conventions for robust AI interactions.
-- **Dockerized Environment**: Fully containerized using Laravel Sail.
+- **Agentic Workflow**: Built with Laravel conventions for robust AI and speech interactions.
+- **Dockerized Environment**: Fully containerized using Laravel Sail, including Ollama and Kokoro TTS.
 
 ## Prerequisites
 
@@ -44,7 +46,9 @@ cp .env.example .env
 | `OLLAMA_URL` | The URL of your Ollama instance | `http://ollama:11434` |
 | `OLLAMA_BASE_MODEL` | The base model to use for training/inference | `llama3.2:3b` |
 | `OLLAMA_MODEL` | The name of your custom trained model | `company-chatbot` |
-| `OLLAMA_SYSTEM_PROMPT` | The identity and constraints for the AI | (See .env) |
+| `TTS_URL` | The URL of your Kokoro TTS service | `http://host.docker.internal:8880` |
+| `TTS_SPEED` | Default speed multiplier for speech synthesis | `0.95` |
+| `TTS_AUTO_NATURAL_FLOW` | Auto-conditioning of input text for pauses/intonation | `true` |
 
 ### 3. Install Dependencies
 
@@ -84,9 +88,9 @@ docker run --rm \
 ./vendor/bin/sail npm run dev
 ```
 
-## AI Model Setup
+## AI Model & TTS Setup
 
-Boss AI uses specific commands to manage the local models and enforce behavioral guardrails.
+Boss AI uses specific commands and API routes to manage local models, handle TTS requests, and enforce behavioral guardrails.
 
 ### Pull the Base Model
 Ensure your Ollama instance has the required base model:
@@ -99,6 +103,13 @@ Initialize the custom model with the company knowledge base and behavioral rules
 ```bash
 ./vendor/bin/sail artisan ai:train
 ```
+
+### Text-to-Speech Endpoints
+
+The Ollama Laravel controller exposes API routes to interact with Kokoro TTS:
+- **POST `/api/tts/speech`**: Streams synthesized audio chunks from a given text input.
+  - Payload options: `input` (text), `voice` (e.g. `af_heart`), `response_format` (`mp3`, `wav`, `flac`, `pcm`), `speed`, `auto_natural_flow`.
+- **GET `/api/tts/voices`**: Returns all available voice packs.
 
 ### Behavioral Guardrails
 The AI is configured to:
@@ -115,8 +126,9 @@ Check the status of models in your Ollama instance:
 ## Project Structure
 
 - `app/Console/Commands`: Contains AI-related artisan commands (`ai:pull`, `ai:train`, etc.)
+- `app/Http/Controllers/Api`: Controller endpoints managing Ollama chat models and Kokoro TTS speech streaming.
 - `training/`: Directory containing source data for model training.
-- `compose.yaml`: Docker configuration including PHP, MySQL, and Ollama.
+- `compose.yaml`: Docker configuration including PHP, Ollama, and Kokoro TTS CPU.
 
 ## License
 
