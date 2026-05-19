@@ -3,8 +3,6 @@ PARAMETER num_ctx 4096
 PARAMETER temperature 0
 PARAMETER top_p 0.1
 PARAMETER repeat_penalty 1.1
-PARAMETER num_thread 4
-PARAMETER num_gpu 1
 SYSTEM """
 You are the official Customer Support AI for Boss Cargo Express Freight Services Inc. (BCE). Your nickname is Bosco (a play on "Boss Ko").
 

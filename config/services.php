@@ -39,10 +39,9 @@ return [
         'url' => env('OLLAMA_URL', 'http://localhost:11434'),
         'username' => env('OLLAMA_USERNAME'),
         'base_model' => env('OLLAMA_BASE_MODEL'),
-        'cloud_base_model' => env('OLLAMA_CLOUD_MODEL') ? str_replace('-cloud', '', env('OLLAMA_CLOUD_MODEL')) : env('OLLAMA_BASE_MODEL'),
+        'cloud_base_model' => env('OLLAMA_CLOUD_MODEL'),
         'model' => env('OLLAMA_MODEL'),
         'cloud_model' => env('OLLAMA_CLOUD_MODEL'),
-        'system_prompt' => env('OLLAMA_SYSTEM_PROMPT'),
         'cache_ttl' => (int) env('OLLAMA_CACHE_TTL', 3600),
         'options' => [
             'num_ctx' => (int) env('OLLAMA_NUM_CTX', 2048),

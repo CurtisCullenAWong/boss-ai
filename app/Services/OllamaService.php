@@ -19,12 +19,12 @@ class OllamaService
 
     public function __construct()
     {
-        $this->baseUrl = config('services.ollama.url');
-        $this->model = config('services.ollama.model');
+        $this->baseUrl = (string) config('services.ollama.url', '');
+        $this->model = (string) config('services.ollama.model', '');
         $this->systemPrompt = $this->loadSystemPrompt();
         $this->cacheTtl = (int) config('services.ollama.cache_ttl', 3600);
-        $this->options = config('services.ollama.options', []);
-        
+        $this->options = (array) config('services.ollama.options', []);
+
         // Ensure numeric options are correctly typed for Ollama's strict API
         if (isset($this->options['num_ctx'])) {
             $this->options['num_ctx'] = (int) $this->options['num_ctx'];
@@ -212,7 +212,7 @@ class OllamaService
     public function train(string $modelName, ?string $baseModel = null): ?array
     {
         $baseModel = $baseModel ?? config('services.ollama.base_model');
-        
+
         // Ensure base model is available locally before creating the derived model.
         if (!$this->hasLocalModel($baseModel)) {
             Log::info("Base model not found locally; pulling model: {$baseModel}");
@@ -240,7 +240,7 @@ class OllamaService
     public function trainCloud(string $modelName, ?string $baseModel = null): ?array
     {
         $baseModel = $baseModel ?? config('services.ollama.cloud_base_model') ?? config('services.ollama.base_model');
-        
+
         // Ensure base model is available locally before creating the derived model.
         if (!$this->hasLocalModel($baseModel)) {
             Log::info("Base model not found locally; pulling model: {$baseModel}");
@@ -494,19 +494,21 @@ class OllamaService
             foreach ($promptFiles as $file) {
                 $prompts[] = trim(File::get($file));
             }
-            
+
             if (!empty($prompts)) {
-                return implode("\n\n", $prompts);
+                $compiledSystemPrompt = implode("\n\n", $prompts);
+                File::put(base_path('training/build/full_system_prompt.txt'), $compiledSystemPrompt);
+                return $compiledSystemPrompt;
             }
         }
 
-        // Fallback to legacy single file or config
+        // Fallback to legacy single file
         $legacyPath = base_path('training/build/full_system_prompt.txt');
         if (File::exists($legacyPath)) {
             return trim(File::get($legacyPath));
         }
 
-        return config('services.ollama.system_prompt', 'You are a professional company assistant.');
+        return 'You are a professional company assistant.';
     }
 
     /**
@@ -632,13 +634,13 @@ class OllamaService
             if (isset($allowedSources['allowed_paths']) && is_array($allowedSources['allowed_paths'])) {
                 foreach ($allowedSources['allowed_paths'] as $path) {
                     $resolvedPath = $this->resolveTrainingPath($path);
-                    
+
                     // Skip obsolete directories even if listed in allowed_sources
                     $normalized = str_replace('\\', '/', $resolvedPath);
                     if (str_contains($normalized, '/sources/knowledge/01_raw/') || str_contains($normalized, '/sources/knowledge/03_validation/')) {
                         continue;
                     }
-                    
+
                     $sourcePaths[] = $resolvedPath;
                 }
 
@@ -656,7 +658,7 @@ class OllamaService
             foreach (File::allFiles($trainingPath) as $file) {
                 $path = $file->getPathname();
                 $normalized = str_replace('\\', '/', $path);
-                
+
                 // Skip obsolete directories
                 if (str_contains($normalized, '/sources/knowledge/01_raw/') || str_contains($normalized, '/sources/knowledge/03_validation/')) {
                     continue;
