@@ -1,9 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\OllamaController;
-use App\Http\Controllers\Api\JobController;
-use App\Http\Controllers\Api\JobApplicantController;
+use App\Http\Controllers\Api\TextToSpeechController;
 use Illuminate\Support\Facades\Route;
+
+Route::prefix('tts')->group(function () {
+    Route::post('/speech', [TextToSpeechController::class, 'speech']);
+    Route::get('/voices', [TextToSpeechController::class, 'voices']);
+});
 
 Route::prefix('ollama')->group(function () {
     Route::get('/status', [OllamaController::class, 'status']);
@@ -14,8 +18,3 @@ Route::prefix('ollama')->group(function () {
     Route::post('/train', [OllamaController::class, 'train']);
 });
 
-Route::apiResource('jobs', JobController::class);
-
-Route::apiResource('applicants', JobApplicantController::class);
-Route::get('/jobs/{job}/applicants', [JobApplicantController::class, 'byJob']);
-Route::patch('/applicants/{applicant}/status', [JobApplicantController::class, 'updateStatus']);

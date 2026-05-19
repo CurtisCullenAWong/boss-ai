@@ -51,4 +51,10 @@ return [
         ],
     ],
 
+    'tts' => [
+        'url' => env('TTS_URL', 'http://localhost:8880'),
+        'speed' => (float) env('TTS_SPEED', 0.95),
+        'auto_natural_flow' => (bool) env('TTS_AUTO_NATURAL_FLOW', true),
+    ],
+
 ];
